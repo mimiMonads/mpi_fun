@@ -46,7 +46,8 @@ int main(int argc, char** argv) {
             0, 
             0, 
             MPI_COMM_WORLD, 
-            MPI_STATUS_IGNORE);
+            MPI_STATUS_IGNORE
+        );
         std::cout << "rank " << world_rank
                   << " received data from rank " << data << "\n";
     }
