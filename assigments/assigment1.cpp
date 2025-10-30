@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-//#include <mpi.h>
+#include <mpi.h>
 #include <string>
 #include <cstdlib>
 #include "../dotenv.hpp"
@@ -13,23 +13,45 @@ const int arraySize = 120;
 int world_size, world_rank; 
 int numberArray[arraySize];
 
-std::string yourStudentNumber;
-std::string yourFullName;
+int studentNumber;
+std::string fullName;
 
 int main(int argc, char** argv) {
 
+    
     // Load env
+    MPI_Init(&argc, &argv);
     dotenv::load();
     // Read env
-    const char* sn_c = std::getenv("STUDENT_NUMBER");
-    const char* fn_c = std::getenv("FULL_NAME");
+    const char* sn_c    = std::getenv("STUDENT_NUMBER");
+    const char* fn_c    = std::getenv("FULL_NAME");
 
-    yourStudentNumber = sn_c ? sn_c : "";
-    yourFullName      = fn_c ? fn_c : "";
+    fullName        = fn_c ? fn_c : "";
 
-    
-    std::cout << yourFullName << '\n';
-    std::cout << yourStudentNumber << '\n';
+    int studentNumber = 0;
 
+
+    if (sn_c && *sn_c) {
+        try { studentNumber     = std::stoi(sn_c); }
+        catch (...) { std::cerr << "Invalid STUDENT_NUMBER\n"; studentNumber = 12345678; }
+    } else {
+        studentNumber = 12345678;
+    }
+
+    int worldRank   = 0;
+    int worldSize   = 0;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
+    MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+
+
+    // Displaying name on main
+    if (worldRank == 0) {
+        std::cout << "Name: " << fullName
+                  << " | Student Number: " << studentNumber << std::endl;
+    }
+
+
+     MPI_Finalize();
     return 0;
 }
