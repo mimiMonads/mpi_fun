@@ -77,6 +77,24 @@ int main(int argc, char** argv) {
                 partition.data(), partitionSize, MPI_INT,
                 0, MPI_COMM_WORLD);
 
+    const int nodeNumber = partition.empty() ? 0 : partition.front();
+    std::vector<int> gatheredNumbers;
+    if (worldRank == 0) {
+        gatheredNumbers.resize(worldSize);
+    }
+
+    MPI_Gather(&nodeNumber, 1, MPI_INT,
+               worldRank == 0 ? gatheredNumbers.data() : nullptr, 1, MPI_INT,
+               0, MPI_COMM_WORLD);
+
+    if (worldRank == 0) {
+        std::cout << "Collected node numbers:";
+        for (int value : gatheredNumbers) {
+            std::cout << ' ' << value;
+        }
+        std::cout << std::endl;
+    }
+
     MPI_Barrier(MPI_COMM_WORLD);
 
     std::cout << "Rank " << worldRank << " subset:";
