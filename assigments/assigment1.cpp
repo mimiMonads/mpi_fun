@@ -59,8 +59,8 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    const int elementsPerRank = arraySize / worldSize;
-    std::vector<int> localNumbers(elementsPerRank);
+    const int partitionSize = arraySize / worldSize;
+    std::vector<int> partition(partitionSize);
 
     if (worldRank == 0) {
 
@@ -73,14 +73,14 @@ int main(int argc, char** argv) {
         }
     }
 
-    MPI_Scatter(numberArray, elementsPerRank, MPI_INT,
-                localNumbers.data(), elementsPerRank, MPI_INT,
+    MPI_Scatter(numberArray, partitionSize, MPI_INT,
+                partition.data(), partitionSize, MPI_INT,
                 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     std::cout << "Rank " << worldRank << " subset:";
-    for (int value : localNumbers) {
+    for (int value : partition) {
         std::cout << ' ' << value;
     }
     std::cout << std::endl;
