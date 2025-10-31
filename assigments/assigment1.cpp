@@ -6,6 +6,8 @@
 #include <mpi.h>
 #include <string>
 #include <cstdlib>
+#include <random>
+#include <vector>
 #include "../dotenv.hpp"
 
 // Global variables
@@ -45,13 +47,44 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
 
 
-    // Displaying name on main
-    if (worldRank == 0) {
-        std::cout << "Name: " << fullName
-                  << " | Student Number: " << studentNumber << std::endl;
+    const bool dividesEvenly = (arraySize % worldSize) == 0;
+
+    // Task A -> Fails if it can dividsed evenly
+    if (!dividesEvenly) {
+        if (worldRank == 0) {
+            std::cerr << "Error: world size " << worldSize
+                      << " does not evenly divide array size " << arraySize << std::endl;
+        }
+        MPI_Finalize();
+        return EXIT_FAILURE;
     }
 
+    const int elementsPerRank = arraySize / worldSize;
+    std::vector<int> localNumbers(elementsPerRank);
 
-     MPI_Finalize();
+    if (worldRank == 0) {
+
+        std::cout << "Name: " << fullName
+            << " | Student Number: " << studentNumber << std::endl;
+        std::mt19937 rng(static_cast<unsigned int>(studentNumber));
+        std::uniform_int_distribution<int> dist(1, 1000);
+        for (int i = 0; i < arraySize; ++i) {
+            numberArray[i] = dist(rng);
+        }
+    }
+
+    MPI_Scatter(numberArray, elementsPerRank, MPI_INT,
+                localNumbers.data(), elementsPerRank, MPI_INT,
+                0, MPI_COMM_WORLD);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    std::cout << "Rank " << worldRank << " subset:";
+    for (int value : localNumbers) {
+        std::cout << ' ' << value;
+    }
+    std::cout << std::endl;
+
+    MPI_Finalize();
     return 0;
 }

@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     // Gets our rank
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    // Gets the proces name 
+    // Gets the process name 
     MPI_Get_processor_name(processor_name, &name_len);
 
 
