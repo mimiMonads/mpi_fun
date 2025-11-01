@@ -66,32 +66,59 @@ int main(int argc, char** argv) {
 
         std::cout << "Name: " << fullName
             << " | Student Number: " << studentNumber << std::endl;
+
+        // Using the Mersenne Twister 19937 generator as generator
+        // This ensures that given a seed it will always return the same sequence
+        // In this case the range of possible values are all `unsigned int`
         std::mt19937 rng(static_cast<unsigned int>(studentNumber));
+
+        // In order to adhere to a range , we need a distribution, in this case from 1 to 1000
+        // Otherwise `numberArray` will contain any range of uint
         std::uniform_int_distribution<int> dist(1, 1000);
         for (int i = 0; i < arraySize; ++i) {
             numberArray[i] = dist(rng);
         }
     }
 
-    MPI_Scatter(numberArray, partitionSize, MPI_INT,
-                partition.data(), partitionSize, MPI_INT,
-                0, MPI_COMM_WORLD);
+    // Scatter the root's full array so every rank receives its partition
+    MPI_Scatter(
+        numberArray,           // Provides the full array
+        partitionSize,         // Number of integers
+        MPI_INT,               // Datatype
+        partition.data(),      // Receive buffer
+        partitionSize, MPI_INT,// How many integers each rank receives and their type
+        0,                     // Marks ownership for root
+        MPI_COMM_WORLD);       // Communicator 
 
-    const int nodeNumber = partition.empty() ? 0 : partition.front();
+    const int nodeNumber = partition.empty() 
+        ? 0 
+        : partition.front();
+        
     std::vector<int> gatheredNumbers;
+
     if (worldRank == 0) {
         gatheredNumbers.resize(worldSize);
     }
 
-    MPI_Gather(&nodeNumber, 1, MPI_INT,
-               worldRank == 0 ? gatheredNumbers.data() : nullptr, 1, MPI_INT,
-               0, MPI_COMM_WORLD);
+    // Gather one number from each rank back to root for aggregation
+    MPI_Gather(&nodeNumber,              // Address of this rank s value to send
+               1, MPI_INT,               // Send a single integer from each process
+               // Root receives all values; others pass nullptr
+               worldRank == 0 
+                ? gatheredNumbers.data() 
+                : nullptr,
+               1, MPI_INT,               // Each received value is a single integer
+               0,                        // Marks ownership for root
+               MPI_COMM_WORLD);          // Communicator 
 
     if (worldRank == 0) {
+
         std::cout << "Collected node numbers:";
+
         for (int value : gatheredNumbers) {
             std::cout << ' ' << value;
         }
+
         std::cout << std::endl;
     }
 
@@ -104,5 +131,5 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
 
     MPI_Finalize();
-    return 0;
+    return EXIT_SUCCESS;
 }
